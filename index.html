@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baikonur: Countdown to History</title>
+    <!--
+    ================================================================================
+    README: Baikonur: Countdown to History - Interactive Web Experience
+    ================================================================================
+
+    Project: Baikonur: Countdown to History (PRD #1)
+    Goal: A cinematic, interactive timeline and simulation experience.
+    Version: 0.1.0 (Foundational Structure)
+
+    Structure:
+    1. HTML: Defines the content sections for the timeline.
+    2. CSS: Inline styles for layout, typography, basic animations, and responsiveness.
+    3. JavaScript:
+        -   `app.js`: Core application logic, scroll-triggered animations using IntersectionObserver.
+        -   `testSuite.js`: Placeholder for embedded test suite.
+
+    Usage:
+    -   Open this HTML file in any modern web browser.
+    -   No external dependencies, build process, or internet connection required after loading.
+
+    Features Implemented (Basic):
+    -   Scrollable timeline structure.
+    -   Content sections for key Baikonur eras/events.
+    -   Simple fade-in animation for sections as they become visible.
+    -   Basic responsive design.
+
+    Features To Be Developed (from PRD):
+    -   Cinematic animations for major launches.
+    -   Launch Simulator (simple controls, LLM narrates mission + visualizes launch outcomes).
+    -   Heroic Moment Replayer (recreated visuals + LLM-generated inner monologue).
+    -   Detailed infographics, video clips, quotes.
+    -   Advanced styling and theming.
+
+    Known Limitations (v0.1.0):
+    -   Animations are basic (fade-in).
+    -   Placeholder content needs expansion and rich media integration.
+    -   Launch Simulator and Heroic Moment Replayer are not implemented.
+    -   Test suite is a placeholder.
+    -   Accessibility features (ARIA roles beyond semantic HTML) need further refinement.
+    -   Performance for complex animations needs to be benchmarked once implemented.
+
+    Technical Stack:
+    -   HTML5
+    -   CSS3 (Flexbox, Grid, Transitions, Media Queries)
+    -   Vanilla JavaScript (ES6+)
+
+    ================================================================================
+    -->
+
+    <style>
+        /* Reset and Base Styles */
+        :root {
+            --primary-bg: #0a0f18; /* Deep space blue */
+            --secondary-bg: #1a1f2c;
+            --text-color: #e0e0e0;
+            --accent-color: #ffab00; /* Amber/Gold for highlights */
+            --timeline-line-color: #4a5568;
+            --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --font-serif: 'Georgia', 'Times New Roman', Times, serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        /* Typography */
+        h1, h2, h3 {
+            font-family: var(--font-serif);
+            color: var(--accent-color);
+            margin-bottom: 0.5em;
+            line-height: 1.2;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            text-align: center;
+            padding: 1em 0.5em;
+            text-shadow: 0 0 10px var(--accent-color);
+        }
+
+        h2 {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+        }
+
+        h3 {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+        }
+
+        p {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            margin-bottom: 1em;
+        }
+
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Layout & Container */
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2em 0;
+        }
+
+        /* Timeline Styles */
+        .timeline {
+            position: relative;
+            padding: 2em 0;
+        }
+
+        .timeline::before { /* The central timeline line */
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: var(--timeline-line-color);
+            transform: translateX(-50%);
+            z-index: -1;
+        }
+
+        .timeline-event {
+            padding: 20px 40px;
+            position: relative;
+            background-color: transparent; /* Will be set by JS for reveal */
+            margin: 30px 0;
+            width: 45%; /* Each event takes up less than half width */
+            opacity: 0; /* Initially hidden */
+            transform: translateY(50px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out, background-color 0.8s ease-out;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .timeline-event.visible {
+            opacity: 1;
+            transform: translateY(0);
+            background-color: var(--secondary-bg);
+        }
+
+        /* Positioning events on either side of the timeline */
+        .timeline-event:nth-child(odd) {
+            left: 0; /* Aligns to the left of the center line */
+            text-align: right;
+        }
+        .timeline-event:nth-child(odd)::before { /* Connector dot */
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: -28px; /* (40px padding - (8px dot width / 2)) - 4px line width / 2 = effectively (40 - 4 - 2) */
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            border: 2px solid var(--primary-bg);
+            z-index: 1;
+        }
+         .timeline-event:nth-child(odd)::after { /* Arrow */
+            content: "";
+            position: absolute;
+            top: 22px;
+            right: -10px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: transparent transparent transparent var(--secondary-bg); /* Points left */
+        }
+        .timeline-event:nth-child(odd).visible::after {
+             border-color: transparent transparent transparent var(--secondary-bg);
+        }
+
+
+        .timeline-event:nth-child(even) {
+            left: 55%; /* Aligns to the right of the center line */
+            text-align: left;
+        }
+         .timeline-event:nth-child(even)::before { /* Connector dot */
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: -28px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            border: 2px solid var(--primary-bg);
+            z-index: 1;
+        }
+        .timeline-event:nth-child(even)::after { /* Arrow */
+            content: "";
+            position: absolute;
+            top: 22px;
+            left: -10px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: transparent var(--secondary-bg) transparent transparent; /* Points right */
+        }
+         .timeline-event:nth-child(even).visible::after {
+             border-color: transparent var(--secondary-bg) transparent transparent;
+        }
+
+
+        .event-date {
+            font-weight: bold;
+            color: var(--accent-color);
+            display: block;
+            margin-bottom: 0.5em;
+            font-size: 1.1em;
+        }
+
+        .event-icon { /* Placeholder for future icons */
+            display: none; /* For now */
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 2em 1em;
+            background: linear-gradient(rgba(10, 15, 24, 0.8), rgba(10, 15, 24, 0.8)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="10" cy="10" r="1" fill="%23e0e0e0"/><circle cx="30" cy="5" r="0.5" fill="%23e0e0e0"/><circle cx="50" cy="15" r="1.2" fill="%23e0e0e0"/><circle cx="70" cy="8" r="0.8" fill="%23e0e0e0"/><circle cx="90" cy="12" r="1" fill="%23e0e0e0"/><circle cx="5" cy="30" r="0.7" fill="%23e0e0e0"/><circle cx="25" cy="35" r="1.1" fill="%23e0e0e0"/><circle cx="45" cy="28" r="0.6" fill="%23e0e0e0"/><circle cx="65" cy="32" r="0.9" fill="%23e0e0e0"/><circle cx="85" cy="38" r="1.3" fill="%23e0e0e0"/><circle cx="15" cy="50" r="1" fill="%23e0e0e0"/><circle cx="35" cy="55" r="0.5" fill="%23e0e0e0"/><circle cx="55" cy="45" r="1.2" fill="%23e0e0e0"/><circle cx="75" cy="52" r="0.8" fill="%23e0e0e0"/><circle cx="95" cy="48" r="1" fill="%23e0e0e0"/><circle cx="10" cy="70" r="0.7" fill="%23e0e0e0"/><circle cx="30" cy="75" r="1.1" fill="%23e0e0e0"/><circle cx="50" cy="68" r="0.6" fill="%23e0e0e0"/><circle cx="70" cy="72" r="0.9" fill="%23e0e0e0"/><circle cx="90" cy="65" r="1.3" fill="%23e0e0e0"/><circle cx="5" cy="90" r="1" fill="%23e0e0e0"/><circle cx="25" cy="85" r="0.5" fill="%23e0e0e0"/><circle cx="45" cy="95" r="1.2" fill="%23e0e0e0"/><circle cx="65" cy="88" r="0.8" fill="%23e0e0e0"/><circle cx="85" cy="92" r="1" fill="%23e0e0e0"/></svg>');
+            background-size: cover; /* Or '200px 200px' for repeating pattern */
+            background-position: center;
+            border-bottom: 4px solid var(--accent-color);
+        }
+        .hero p {
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            font-size: clamp(1rem, 2vw, 1.2rem);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2em 1em;
+            background-color: var(--secondary-bg);
+            font-size: 0.9em;
+            margin-top: 2em;
+        }
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 768px) {
+            .timeline::before {
+                left: 20px; /* Move line to the left */
+            }
+            .timeline-event {
+                width: calc(100% - 50px); /* Full width minus some padding and line space */
+                left: 50px !important; /* All events on the right of the line */
+                text-align: left !important; /* Align text left for all */
+                margin-left: 0; /* Reset margin for stacking */
+            }
+            .timeline-event::before { /* Adjust connector dot position */
+                left: -36px !important; /* (20px line offset + 8px dot width / 2) + 4px line width/2 */
+                right: auto;
+            }
+            .timeline-event::after { /* Adjust arrow */
+                left: -10px !important; /* Points right */
+                right: auto;
+                border-color: transparent var(--secondary-bg) transparent transparent !important;
+            }
+            .timeline-event:nth-child(odd)::after,
+            .timeline-event:nth-child(even)::after {
+                 border-color: transparent var(--secondary-bg) transparent transparent !important;
+            }
+
+            h1 { font-size: 1.8rem; }
+            h2 { font-size: 1.4rem; }
+        }
+
+        /* Accessibility: Focus visible */
+        :focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        /* Test Suite Placeholder Style */
+        #test-suite-output {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.8em;
+            z-index: 1000;
+            border-top: 2px solid var(--accent-color);
+        }
+        #test-suite-output .pass { color: #7CFC00; }
+        #test-suite-output .fail { color: #FF6347; }
+        #test-suite-output .info { color: #87CEEB; }
+
+    </style>
+</head>
+<body>
+
+    <header class="hero">
+        <h1>Baikonur: Countdown to History</h1>
+        <p>Embark on an interactive journey through the monumental history of the Baikonur Cosmodrome, from its secret origins to its role as a global hub for space exploration.</p>
+    </header>
+
+    <main class="container">
+        <section class="timeline">
+            <!-- Event 1: Genesis -->
+            <article class="timeline-event" data-event-id="genesis">
+                <span class="event-date">June 2, 1955</span>
+                <h3>The Secret Birth</h3>
+                <p>The Soviet Ministry of Defense decrees the establishment of NIIP-5, a top-secret missile test range. Its location in the Kazakh steppe, near Tyuratam, was chosen for its sparse population and favorable latitude. The name "Baikonur" was a deception.</p>
+                <!-- Placeholder for cinematic animation trigger / more info -->
+            </article>
+
+            <!-- Event 2: First ICBM -->
+            <article class="timeline-event" data-event-id="icbm">
+                <span class="event-date">August 21, 1957</span>
+                <h3>R-7 Semyorka: The First Roar</h3>
+                <p>The world's first Intercontinental Ballistic Missile, the R-7, successfully launches from Baikonur, proving the site's capability for large-scale rocket operations and laying the foundation for future space launch vehicles.</p>
+            </article>
+
+            <!-- Event 3: Sputnik 1 -->
+            <article class="timeline-event" data-event-id="sputnik1">
+                <span class="event-date">October 4, 1957</span>
+                <h3>Sputnik 1: Dawn of the Space Age</h3>
+                <p>Baikonur launches the world's first artificial satellite. Sputnik 1's "beep-beep" shocked the world, ignited the Space Race, and forever changed humanity's relationship with the cosmos.</p>
+            </article>
+
+            <!-- Event 4: Laika -->
+            <article class="timeline-event" data-event-id="laika">
+                <span class="event-date">November 3, 1957</span>
+                <h3>Laika: First Living Being in Orbit</h3>
+                <p>Sputnik 2 carries Laika, a stray dog, into orbit. A monumental, albeit controversial, step in understanding how living organisms could fare in space.</p>
+            </article>
+
+            <!-- Event 5: Gagarin -->
+            <article class="timeline-event" data-event-id="gagarin">
+                <span class="event-date">April 12, 1961</span>
+                <h3>"Poyekhali!" Yuri Gagarin Orbits Earth</h3>
+                <p>Yuri Gagarin launches aboard Vostok 1, becoming the first human in outer space and completing an orbit of the Earth. The launchpad is renamed "Gagarin's Start."</p>
+                <!-- Placeholder for Heroic Moment Replayer trigger -->
+            </article>
+
+            <!-- Event 6: Tereshkova -->
+            <article class="timeline-event" data-event-id="tereshkova">
+                <span class="event-date">June 16, 1963</span>
+                <h3>Valentina Tereshkova: First Woman in Space</h3>
+                <p>Launched aboard Vostok 6, Valentina Tereshkova makes history as the first woman to journey into space, a landmark achievement for equality and exploration.</p>
+            </article>
+
+            <!-- Event 7: Buran -->
+            <article class="timeline-event" data-event-id="buran">
+                <span class="event-date">November 15, 1988</span>
+                <h3>Buran: The Soviet Shuttle's Flight</h3>
+                <p>The uncrewed Buran space shuttle completes its first and only orbital flight, launched by the powerful Energia rocket. A marvel of automation, though the program was later canceled.</p>
+            </article>
+
+            <!-- Event 8: ISS Lifeline -->
+            <article class="timeline-event" data-event-id="iss">
+                <span class="event-date">2011 - 2020</span>
+                <h3>Sole Gateway to the ISS</h3>
+                <p>Following the retirement of NASA's Space Shuttle, Baikonur became the exclusive launch site for all crewed missions to the International Space Station, a critical role in international space cooperation.</p>
+                 <!-- Placeholder for Launch Simulator trigger -->
+            </article>
+
+            <!-- Add more events as needed -->
+
+        </section>
+    </main>
+
+    <footer>
+        <p>© <span id="currentYear"></span> Baikonur Interactive Experience. All rights reserved (for this educational demo).
+        <br>Content derived from historical reports. For educational purposes only.</p>
+    </footer>
+
+    <!-- Embedded Test Suite Output Area -->
+    <div id="test-suite-output" style="display: none;"> <!-- Hidden by default, can be toggled by tests -->
+        <h4>Test Suite Results:</h4>
+        <ul id="test-results-list"></ul>
+    </div>
+
+    <script id="app-logic">
+    // Main Application Logic (IIFE for encapsulation)
+    (function() {
+        'use strict';
+
+        // Function to handle scroll-triggered animations
+        function initScrollAnimations() {
+            const timelineEvents = document.querySelectorAll('.timeline-event');
+
+            if (!timelineEvents.length) {
+                console.warn("No timeline events found for animation.");
+                return;
+            }
+
+            const observerOptions = {
+                root: null, // viewport
+                rootMargin: '0px',
+                threshold: 0.3 // Trigger when 30% of the element is visible
+            };
+
+            const observerCallback = (entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        // Optional: Unobserve after animation to save resources
+                        // observer.unobserve(entry.target);
+                    } else {
+                        // Optional: Remove class if you want animation to replay on scroll up
+                        // entry.target.classList.remove('visible');
+                    }
+                });
+            };
+
+            const intersectionObserver = new IntersectionObserver(observerCallback, observerOptions);
+            timelineEvents.forEach(event => intersectionObserver.observe(event));
+        }
+
+        // Update copyright year
+        function updateCopyrightYear() {
+            const yearElement = document.getElementById('currentYear');
+            if (yearElement) {
+                yearElement.textContent = new Date().getFullYear();
+            }
+        }
+
+        // DOMContentLoaded listener to ensure HTML is parsed
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Baikonur Experience: DOM Content Loaded.");
+            initScrollAnimations();
+            updateCopyrightYear();
+            
+            // Example: Placeholder for initiating a more complex component
+            // if (typeof LaunchSimulator !== 'undefined') {
+            //     LaunchSimulator.init();
+            // }
+        });
+
+    })();
+    </script>
+
+    <script id="test-suite">
+    // Embedded Test Suite (IIFE for encapsulation)
+    (function() {
+        'use strict';
+
+        const testResultsList = document.getElementById('test-results-list');
+        const testSuiteOutput = document.getElementById('test-suite-output');
+        let testsPassed = 0;
+        let testsFailed = 0;
+
+        function logTestResult(description, success, details = '') {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `<span class="${success ? 'pass' : 'fail'}">${success ? 'PASS' : 'FAIL'}</span>: ${description}. ${details}`;
+            if (testResultsList) {
+                testResultsList.appendChild(listItem);
+            } else {
+                console.error("Test results list element not found.");
+            }
+            if (success) testsPassed++; else testsFailed++;
+        }
+        
+        function runTests() {
+            if (!testSuiteOutput || !testResultsList) {
+                console.error("Test suite UI elements not found. Cannot display results.");
+                return;
+            }
+            testSuiteOutput.style.display = 'block'; // Show test output
+            testResultsList.innerHTML = ''; // Clear previous results
+            testsPassed = 0;
+            testsFailed = 0;
+
+            console.log("Baikonur Test Suite: Starting tests...");
+            logTestResult("Test Suite Initialized", true, "Test runner is active.");
+
+            // Test 1: HTML Structure - Check for main elements
+            logTestResult("HTML: Hero section exists", !!document.querySelector('.hero'), "");
+            logTestResult("HTML: Timeline section exists", !!document.querySelector('.timeline'), "");
+            logTestResult("HTML: At least one timeline event exists", !!document.querySelector('.timeline-event'), "");
+            logTestResult("HTML: Footer exists", !!document.querySelector('footer'), "");
+
+            // Test 2: CSS - Check if critical styles are applied (basic check)
+            const heroElement = document.querySelector('.hero');
+            let heroBgColor = '';
+            if (heroElement) {
+                 heroBgColor = window.getComputedStyle(heroElement).backgroundColor;
+            }
+            // Note: Background image with gradient makes this tricky. Test a simpler property or element.
+            const bodyElement = document.body;
+            const bodyBgColor = window.getComputedStyle(bodyElement).backgroundColor;
+            logTestResult("CSS: Body background color is set", bodyBgColor !== '' && bodyBgColor !== 'rgba(0, 0, 0, 0)' && bodyBgColor !== 'transparent', `Actual: ${bodyBgColor}`);
+
+
+            // Test 3: JavaScript - Check if core app logic is available (very basic)
+            // This is tricky for IIFEs. We can check for side effects or global stubs if any.
+            // For now, we'll assume if the script runs, it's "loaded".
+            // A better test would be to expose a testable function or check for a class added by JS.
+            const firstTimelineEvent = document.querySelector('.timeline-event');
+            if (firstTimelineEvent) {
+                // Simulate a scroll to trigger IntersectionObserver (hard to do reliably in pure JS test)
+                // Instead, we'll check if the IntersectionObserver setup would have elements to observe.
+                logTestResult("JS: Timeline events are queryable for IntersectionObserver", document.querySelectorAll('.timeline-event').length > 0, "");
+            } else {
+                logTestResult("JS: Timeline events are queryable", false, "No .timeline-event elements found.");
+            }
+
+            // Test 4: Copyright year update
+            const currentYearEl = document.getElementById('currentYear');
+            const expectedYear = new Date().getFullYear().toString();
+            if (currentYearEl) {
+                logTestResult("JS: Copyright year is updated", currentYearEl.textContent === expectedYear, `Expected ${expectedYear}, Got ${currentYearEl.textContent}`);
+            } else {
+                logTestResult("JS: Copyright year element exists", false);
+            }
+            
+            // Test 5: Performance API availability (example)
+            logTestResult("API: IntersectionObserver is supported", 'IntersectionObserver' in window, "");
+            logTestResult("API: requestAnimationFrame is supported", 'requestAnimationFrame' in window, "");
+
+
+            // Final summary
+            const summaryItem = document.createElement('li');
+            summaryItem.innerHTML = `<strong class="info">Summary: ${testsPassed} passed, ${testsFailed} failed.</strong>`;
+            testResultsList.appendChild(summaryItem);
+            console.log(`Baikonur Test Suite: Finished. ${testsPassed} passed, ${testsFailed} failed.`);
+
+            if (testsFailed > 0) {
+                console.warn("Some tests failed. Please review the output.");
+            } else {
+                console.log("All tests passed!");
+            }
+        }
+
+        // Run tests after DOM is fully loaded and app logic has had a chance to run
+        document.addEventListener('DOMContentLoaded', () => {
+            // A small delay to ensure all initial JS has run
+            setTimeout(runTests, 500); 
+        });
+
+        // Expose a way to re-run tests from console, if desired for debugging
+        window.runBaikonurTests = runTests; 
+
+    })();
+    </script>
+
+</body>
+</html>

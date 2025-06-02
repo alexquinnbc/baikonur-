@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Baikonur! - Soviet Space Mission Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0f1c 0%, #1a1f2e 50%, #2d1810 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #ff4444;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #cccccc;
+            margin-bottom: 20px;
+        }
+        
+        .mission-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .stat {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px 20px;
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ff6b35;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #aaaaaa;
+            margin-top: 5px;
+        }
+        
+        .mission-builder {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .mission-builder {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .builder-section {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ff6b35;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 0.95rem;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #ff6b35;
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        select option {
+            background: #1a1f2e;
+            color: #ffffff;
+        }
+        
+        .launch-section {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .launch-btn {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ff4444, #ff6b35);
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+        
+        .launch-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 68, 68, 0.4);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #ff6b35;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .outcome-display {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .outcome-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .outcome-content {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+        }
+        
+        .success {
+            border-left: 4px solid #00ff88;
+            color: #00ff88;
+        }
+        
+        .failure {
+            border-left: 4px solid #ff4444;
+            color: #ff4444;
+        }
+        
+        .legendary {
+            border-left: 4px solid #ffaa00;
+            color: #ffaa00;
+        }
+        
+        .mission-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .card-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #ff6b35;
+        }
+        
+        .card-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #cccccc;
+        }
+        
+        .share-section {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .share-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin: 0 5px;
+            transition: all 0.2s ease;
+        }
+        
+        .share-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .alternate-history {
+            background: rgba(170, 0, 255, 0.1);
+            border: 1px solid rgba(170, 0, 255, 0.3);
+            margin-top: 20px;
+        }
+        
+        .alt-history-title {
+            color: #aa00ff;
+        }
+        
+        .what-if-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(170, 0, 255, 0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+        
+        .what-if-btn {
+            background: linear-gradient(45deg, #aa00ff, #dd00aa);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .what-if-btn:hover {
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🚀 COMMAND BAIKONUR!</h1>
+            <p class="subtitle">Take command of the Soviet space program. Build missions. Make history. Rewrite the cosmos.</p>
+            
+            <div class="mission-stats">
+                <div class="stat">
+                    <div class="stat-number" id="totalMissions">0</div>
+                    <div class="stat-label">Missions Launched</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="successRate">0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="legendaryMissions">0</div>
+                    <div class="stat-label">Legendary Moments</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mission-builder">
+            <div class="builder-section">
+                <h3 class="section-title">🎯 Mission Parameters</h3>
+                
+                <div class="form-group">
+                    <label for="missionType">Mission Type</label>
+                    <select id="missionType">
+                        <option value="unmanned">Unmanned Satellite</option>
+                        <option value="manned">Manned Orbital Flight</option>
+                        <option value="lunar">Lunar Mission</option>
+                        <option value="planetary">Planetary Probe</option>
+                        <option value="space_station">Space Station</option>
+                        <option value="military">Military Reconnaissance</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="year">Mission Year</label>
+                    <select id="year">
+                        <option value="1957">1957 - Dawn of Space Age</option>
+                        <option value="1961">1961 - First Human in Space</option>
+                        <option value="1965">1965 - Space Race Peak</option>
+                        <option value="1969">1969 - Moon Landing Era</option>
+                        <option value="1975">1975 - Détente Period</option>
+                        <option value="1980">1980 - Station Era</option>
+                        <option value="1985">1985 - Advanced Programs</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="rocket">Rocket System</label>
+                    <select id="rocket">
+                        <option value="r7">R-7 Semyorka - Reliable workhorse</option>
+                        <option value="vostok">Vostok - Human spaceflight</option>
+                        <option value="soyuz">Soyuz - Advanced crew vehicle</option>
+                        <option value="proton">Proton - Heavy lift capability</option>
+                        <option value="n1">N1 - Moon rocket (experimental)</option>
+                        <option value="energia">Energia - Ultimate heavy lifter</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="builder-section">
+                <h3 class="section-title">👨‍🚀 Mission Details</h3>
+                
+                <div class="form-group">
+                    <label for="crew">Crew Selection</label>
+                    <select id="crew">
+                        <option value="none">Unmanned</option>
+                        <option value="gagarin">Yuri Gagarin - The First</option>
+                        <option value="tereshkova">Valentina Tereshkova - First Woman</option>
+                        <option value="leonov">Alexei Leonov - Spacewalker</option>
+                        <option value="komarov">Vladimir Komarov - Test Pilot</option>
+                        <option value="novice">Novice Cosmonaut</option>
+                        <option value="veteran">Veteran Crew</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="objective">Primary Objective</label>
+                    <select id="objective">
+                        <option value="orbit">Achieve Stable Orbit</option>
+                        <option value="eva">Spacewalk/EVA</option>
+                        <option value="docking">Orbital Docking</option>
+                        <option value="landing">Soft Landing</option>
+                        <option value="science">Scientific Research</option>
+                        <option value="reconnaissance">Military Surveillance</option>
+                        <option value="endurance">Long Duration Flight</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="risk">Risk Tolerance</label>
+                    <select id="risk">
+                        <option value="conservative">Conservative - Safety First</option>
+                        <option value="standard">Standard - Balanced Approach</option>
+                        <option value="aggressive">Aggressive - Push Boundaries</option>
+                        <option value="experimental">Experimental - Untested Tech</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="launch-section">
+            <button class="launch-btn" onclick="launchMission()">
+                🚀 LAUNCH MISSION
+            </button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Mission Control calculating trajectory...</p>
+        </div>
+        
+        <div class="outcome-display" id="outcomeDisplay"></div>
+        
+        <div class="builder-section alternate-history">
+            <h3 class="section-title alt-history-title">🔮 Alternate History Mode</h3>
+            <p style="margin-bottom: 15px; color: #cccccc;">Ask "What if?" and explore alternate timelines of space exploration.</p>
+            
+            <input type="text" class="what-if-input" id="whatIfInput" 
+                   placeholder="What if Buran flew in 1983? What if the N1 succeeded? What if...">
+            
+            <button class="what-if-btn" onclick="exploreAlternateHistory()">
+                Explore Timeline
+            </button>
+            
+            <div id="altHistoryResult"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mission statistics
+        let stats = { total: 0, successes: 0, legendary: 0 };
+
+        // Mission outcome probabilities
+        const outcomes = {
+            conservative: { success: 0.7, failure: 0.25, legendary: 0.05 },
+            standard: { success: 0.6, failure: 0.3, legendary: 0.1 },
+            aggressive: { success: 0.4, failure: 0.4, legendary: 0.2 },
+            experimental: { success: 0.3, failure: 0.5, legendary: 0.2 }
+        };
+
+        const yearMods = {
+            1957: { success: 0.4, failure: 0.5, legendary: 0.1 },
+            1961: { success: 0.6, failure: 0.3, legendary: 0.1 },
+            1965: { success: 0.7, failure: 0.2, legendary: 0.1 },
+            1969: { success: 0.6, failure: 0.3, legendary: 0.1 },
+            1975: { success: 0.8, failure: 0.15, legendary: 0.05 },
+            1980: { success: 0.8, failure: 0.15, legendary: 0.05 },
+            1985: { success: 0.7, failure: 0.2, legendary: 0.1 }
+        };
+
+        // Mission outcome templates
+        const templates = {
+            success: [
+                "Outstanding success! The {rocket} performs flawlessly as {crew} achieves {objective}. Mission Control celebrates as telemetry confirms all systems nominal. This triumph showcases Soviet engineering excellence.",
+                "Complete mission success! {crew} executes {objective} with remarkable precision using the reliable {rocket} system. The achievement demonstrates the superiority of Soviet space technology.",
+                "Triumphant launch! Against challenging conditions, {crew} successfully completes {objective}. The {rocket} proves its reliability once again, earning praise from the highest Party officials."
+            ],
+            failure: [
+                "Mission failure! Critical systems malfunction forces mission abort during {objective} phase. The {rocket} experiences unexpected anomalies. {crew} safety protocols activated immediately.",
+                "Technical difficulties! Multiple system failures prevent successful completion of {objective}. The {rocket} shows concerning performance issues requiring extensive investigation.",
+                "Mission terminated! Severe technical problems during {objective} operations force emergency procedures. This setback will delay the program significantly."
+            ],
+            legendary: [
+                "LEGENDARY ACHIEVEMENT! This mission transcends all expectations! {crew} not only completes {objective} but does so with extraordinary skill that becomes the stuff of legend. The {rocket} performs beyond specifications, enabling impossible feats. History will remember this day!",
+                "HISTORIC TRIUMPH! What began as a standard mission becomes an epic demonstration of human courage and Soviet engineering. {crew} accomplishes {objective} under impossible conditions, creating an instant legend that inspires generations!",
+                "UNPRECEDENTED SUCCESS! {crew} achieves {objective} in spectacular fashion, breaking multiple records simultaneously. The {rocket} exceeds all parameters, making this mission a watershed moment in space exploration!"
+            ]
+        };
+
+        function calculateOutcome() {
+            const risk = document.getElementById('risk').value;
+            const year = document.getElementById('year').value;
+            
+            const riskProb = outcomes[risk];
+            const yearProb = yearMods[year];
+            
+            const avgSuccess = (riskProb.success + yearProb.success) / 2;
+            const avgLegendary = (riskProb.legendary + yearProb.legendary) / 2;
+            
+            const random = Math.random();
+            
+            if (random < avgLegendary) return 'legendary';
+            if (random < avgLegendary + avgSuccess) return 'success';
+            return 'failure';
+        }
+
+        function generateText(outcome) {
+            const template = templates[outcome][Math.floor(Math.random() * templates[outcome].length)];
+            const rocket = document.getElementById('rocket').selectedOptions[0].text.split(' - ')[0];
+            const crew = document.getElementById('crew').selectedOptions[0].text.split(' - ')[0];
+            const objective = document.getElementById('objective').selectedOptions[0].text.toLowerCase();
+            
+            return template
+                .replace(/{rocket}/g, rocket)
+                .replace(/{crew}/g, crew)
+                .replace(/{objective}/g, objective);
+        }
+
+        function createMissionCard() {
+            const type = document.getElementById('missionType').selectedOptions[0].text;
+            const year = document.getElementById('year').value;
+            const rocket = document.getElementById('rocket').selectedOptions[0].text.split(' - ')[0];
+            const crew = document.getElementById('crew').selectedOptions[0].text.split(' - ')[0];
+            const objective = document.getElementById('objective').selectedOptions[0].text;
+            const risk = document.getElementById('risk').selectedOptions[0].text;
+            
+            const names = ['Cosmos', 'Vostok', 'Luna', 'Soyuz', 'Progress'];
+            const missionName = names[Math.floor(Math.random() * names.length)] + ' ' + (Math.floor(Math.random() * 99) + 1);
+            
+            return `
+                <div class="mission-card">
+                    <div class="card-title">Mission: ${missionName}</div>
+                    <div class="card-details">
+                        <div><strong>Type:</strong> ${type}</div>
+                        <div><strong>Year:</strong> ${year}</div>
+                        <div><strong>Rocket:</strong> ${rocket}</div>
+                        <div><strong>Crew:</strong> ${crew}</div>
+                        <div><strong>Objective:</strong> ${objective}</div>
+                        <div><strong>Risk:</strong> ${risk.split(' - ')[0]}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateStats(outcome) {
+            stats.total++;
+            if (outcome === 'success' || outcome === 'legendary') stats.successes++;
+            if (outcome === 'legendary') stats.legendary++;
+            
+            document.getElementById('totalMissions').textContent = stats.total;
+            document.getElementById('successRate').textContent = Math.round((stats.successes / stats.total) * 100) + '%';
+            document.getElementById('legendaryMissions').textContent = stats.legendary;
+        }
+
+        function launchMission() {
+            const loading = document.getElementById('loading');
+            const display = document.getElementById('outcomeDisplay');
+            
+            loading.style.display = 'block';
+            display.style.display = 'none';
+            
+            setTimeout(() => {
+                const outcome = calculateOutcome();
+                const text = generateText(outcome);
+                const card = createMissionCard();
+                
+                const titles = {
+                    success: 'Mission Success!',
+                    failure: 'Mission Critical Failure',
+                    legendary: 'LEGENDARY ACHIEVEMENT!'
+                };
+                
+                loading.style.display = 'none';
+                display.innerHTML = `
+                    <div class="outcome-title ${outcome}">${titles[outcome]}</div>
+                    <div class="outcome-content">${text}</div>
+                    ${card}
+                    <div class="share-section">
+                        <button class="share-btn" onclick="shareMission()">📋 Copy Report</button>
+                        <button class="share-btn" onclick="launchMission()">🔄 New Mission</button>
+                    </div>
+                `;
+                display.style.display = 'block';
+                updateStats(outcome);
+                display.scrollIntoView({ behavior: 'smooth' });
+            }, 1500);
+        }
+
+        function exploreAlternateHistory() {
+            const input = document.getElementById('whatIfInput').value.trim();
+            const result = document.getElementById('altHistoryResult');
+            
+            if (!input) {
+                alert('Please enter a "What if?" scenario!');
+                return;
+            }
+            
+            result.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Calculating timeline...</p></div>';
+            
+            setTimeout(() => {
+                const scenarios = [
+                    `In this alternate timeline where ${input.toLowerCase()}, Soviet space program achievements accelerate dramatically. Revolutionary breakthroughs emerge years ahead of schedule, reshaping the entire Space Race and establishing new paradigms for human space exploration.`,
+                    `The scenario "${input}" creates a fascinating divergence. With this change, the USSR develops breakthrough technologies that transform space exploration, leading to achievements that surpass our timeline's greatest moments.`,
+                    `Exploring "${input}" reveals profound consequences. This alternate path enables the Soviet Union to pioneer impossible missions, creating a golden age of space exploration that redefines humanity's cosmic journey.`
+                ];
+                
+                const text = scenarios[Math.floor(Math.random() * scenarios.length)];
+                
+                result.innerHTML = `
+                    <div class="outcome-display" style="display: block; margin-top: 15px;">
+                        <div class="outcome-title legendary">Alternate Timeline Explored!</div>
+                        <div class="outcome-content">${text}</div>
+                        <div class="mission-card">
+                            <div class="card-title">Timeline Analysis</div>
+                            <div class="card-details">
+                                <div><strong>Scenario:</strong> ${input}</div>
+                                <div><strong>Impact:</strong> Revolutionary</div>
+                                <div><strong>Probability:</strong> Theoretical</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }, 1000);
+        }
+
+        function shareMission() {
+            const content = document.querySelector('#outcomeDisplay .outcome-content').textContent;
+            const card = document.querySelector('#outcomeDisplay .mission-card').textContent;
+            const text = `🚀 BAIKONUR MISSION REPORT 🚀\n\n${content}\n\n${card}`;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Mission report copied!');
+                }).catch(() => {
+                    alert('Copy failed - please copy manually');
+                });
+            } else {
+                alert('Clipboard not supported - please copy manually');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('whatIfInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') exploreAlternateHistory();
+            });
+        });
+    </script>
+</body>
+</html>
